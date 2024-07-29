@@ -1,0 +1,127 @@
+src
+├── __tests__
+├── └── index.test.ts
+├── buildRepoTree.ts
+├── getFormattedFileTree.ts
+├── index.ts
+└── scanFileTypes.ts
+
+--- src/__tests__/index.test.ts ---
+import { packageStart } from "..";
+
+jest.spyOn(global.console, "log");
+
+describe("@liqtags/utils", () => {
+  it("adds two numbers", () => {
+    expect(packageStart()).toBe("PACKAGE_START");
+  });
+});
+
+--- src/buildRepoTree.ts ---
+
+import { readdirSync, statSync, readFileSync } from 'fs';
+import { basename, join, relative } from 'path';
+import scanFileTypes from './scanFileTypes';
+let ignoreNames = ['node_modules', 'dist', '.git'];
+
+function buildRepoTree(dir, baseDir) {
+    const name = basename(dir);
+    const directoryStats = statSync(dir);
+    const node = { name, type: 'directory', children: [] };
+    let fileContents = '';
+
+    if (directoryStats.isDirectory()) {
+        readdirSync(dir).forEach(file => {
+            const filePath = join(dir, file);
+            if (statSync(filePath).isDirectory()) {
+                if (ignoreNames.indexOf(file) != -1) return;
+                const result = buildRepoTree(filePath, baseDir);
+                node.children.push(result.node);
+                fileContents += result.fileContents;
+            } else if (scanFileTypes(file)) {
+                node.children.push({ name: file, type: 'file' });
+                const relativePath = relative(baseDir, filePath);
+                const content = readFileSync(filePath, 'utf8');
+                const prefix = baseDir.split('/').pop();
+                fileContents += `--- ${prefix}/${relativePath} ---\n${content}\n`;
+            }
+        });
+    }
+    return { node, fileContents };
+}
+
+export default buildRepoTree;
+--- src/getFormattedFileTree.ts ---
+function getFormattedFileTree(node, prefix = '') {
+    let result = `${prefix}${node.name}\n`;
+    if (node.type === 'directory' && node.children) {
+        node.children.forEach((child, index) => {
+            const isLast = index === node.children.length - 1;
+            result += getFormattedFileTree(
+                child,
+                `${prefix}${isLast ? '└── ' : '├── '}`
+            );
+        });
+    }
+    return result;
+}
+
+export default getFormattedFileTree;
+--- src/index.ts ---
+import { writeFileSync, existsSync, mkdirSync } from 'fs';
+import { resolve } from 'path';
+import buildRepoTree from './buildRepoTree';
+import getFormattedFileTree from './getFormattedFileTree';
+
+function run(obj) {
+  const { srcPath, outPath, shouldOutput } = obj;
+  const { node: fileTree, fileContents } = buildRepoTree(srcPath, srcPath);
+  const treeOutput = getFormattedFileTree(fileTree);
+  let together = `${treeOutput}\n${fileContents}`;
+
+  if (!existsSync('./out')) {
+    mkdirSync('./out');
+  }
+
+  if (shouldOutput) {
+    writeFileSync(`${outPath}/context.txt`, together);
+  }
+}
+
+run({
+  srcPath: resolve(__dirname, 'src'),
+  outPath: resolve(__dirname, 'out'),
+  shouldOutput: true
+})
+--- src/scanFileTypes.ts ---
+import { extname } from 'path';
+
+const scanFileTypes = (file) => {
+    // probs better way to do this
+    return extname(file) === '.ts'
+        || extname(file) === '.sol'
+        || extname(file) === '.js'
+        || extname(file) === '.json'
+        || extname(file) === '.md'
+        || extname(file) === '.html'
+        || extname(file) === '.css'
+        || extname(file) === '.scss'
+        || extname(file) === '.less'
+        || extname(file) === '.graphql'
+        || extname(file) === '.yml'
+        || extname(file) === '.yaml'
+        || extname(file) === '.xml'
+        || extname(file) === '.java'
+        || extname(file) === '.py'
+        || extname(file) === '.go'
+        || extname(file) === '.rb'
+        || extname(file) === '.php'
+        || extname(file) === '.sh'
+        || extname(file) === '.bat'
+        || extname(file) === '.cmd'
+        || extname(file) === '.ps1'
+        || extname(file) === '.pl'
+        || extname(file) === '.pm'
+}
+
+export default scanFileTypes;
