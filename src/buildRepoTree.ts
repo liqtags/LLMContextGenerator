@@ -1,4 +1,3 @@
-
 import { readdirSync, statSync, readFileSync } from 'fs';
 import { basename, join, relative } from 'path';
 import scanFileTypes from './scanFileTypes';
