@@ -1,6 +1,7 @@
 # LLM Context Generator
 
 ![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https://github.com/liqtags/LLMContextGenerator&count_bg=%2379C83D&title_bg=%23555555&icon=mediafire.svg&icon_color=%23E7E7E7&title=HITS&edge_flat=false)
+[![telegram badge](https://img.shields.io/badge/liquidtags-grey?style=flat&logo=telegram)](https://t.me/liquidtags) <br>
 
 This package scans a repository and generates a unified output of current source files, designed to be used as context for Large Language Models (LLMs).
 
